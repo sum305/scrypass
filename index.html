@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width" />
+<title>ScryPass パスワードジェネレーター</title>
+<link rel="icon" href="favicon.png" />
+<style>
+body {
+	background: #f3f3f3;
+	font-family: sans-serif;
+	line-height: 1.5;
+	text-size-adjust: 100%;
+	color: #333;
+}
+body > * {
+	max-width: max-content;
+	margin: 1rem auto;
+}
+h1 a {
+	text-decoration: none;
+	color: inherit;
+}
+input, button {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	font-family: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	color: inherit;
+}
+input[type="checkbox"] {
+	margin-right: 0.5em;
+}
+input:not([type="checkbox"]) {
+	width: 100%;
+	height: 2em;
+	padding: 0 0.75em;
+	border: 1px solid #ccc;
+	border-radius: 0.25em;
+}
+input:not([type="checkbox"]):focus {
+	box-shadow: 0 0 0 0.25em #ddd;
+	outline: none;
+	border-color: #999;
+}
+input[type="submit"] {
+	background: #eee;
+}
+button {
+	margin: 0.25em 0;
+	border: none;
+	background: transparent;
+}
+label {
+	display: block;
+	padding: 0.25em 0;
+}
+.boxes {
+	max-width: 20em;
+	padding: 0.75em 1em;
+	box-shadow: 0 0 0.25em #ccc;
+	background: #fff;
+}
+.box {
+	margin: 0.25em 0;
+}
+.line > :nth-child(n+2) {
+	margin-left: 1em;
+}
+.sep::before {
+	content: "";
+	display: block;
+	margin: 1em 0;
+	border-top: 1px dashed #ccc;
+}
+.secret:not(:focus):not(:placeholder-shown) {
+	background: #ccc;
+	color: transparent;
+}
+.secret:not(:focus)::selection {
+	color: transparent;
+}
+#message:not(:empty) {
+	max-width: max-content;
+	left: 0;
+	right: 0;
+	margin: 0 auto;
+	padding: 0.5em;
+	border-radius: 0.25em;
+	background: #000;
+	color: #fff;
+	opacity: 0.75;
+}
+</style>
+<script src="scrypt-async.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+	"use strict";
+
+	let digitClass = "0123456789";
+	let alphaClass = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	let punctClass = "!#$%()*+,-./:;=?@[]^_|~"; // length = 23
+
+	let generatorForm = document.getElementById("generator");
+	let resultField = document.getElementById("result");
+	let messageFrame = document.getElementById("message");
+
+	let clearResult;
+	clearResult = function() {
+		resultField.value = "";
+		messageFrame.textContent = "";
+		generatorForm.removeEventListener("input", clearResult);
+		generatorForm.removeEventListener("change", clearResult);
+	};
+
+	document.getElementById("gensalt").addEventListener("click", function() {
+		let r = new Uint8Array(20);
+		window.crypto.getRandomValues(r);
+		let c = digitClass + alphaClass + "._";
+		let v = "";
+		for (let i = 0; i < r.length; i++) {
+			v += c[r[i] % c.length];
+		}
+		document.getElementById("salt").value = v;
+		clearResult();
+	});
+
+	generatorForm.addEventListener("change", function(event) {
+		event.target.value = event.target.value.normalize("NFKC");
+	});
+
+	generatorForm.addEventListener("submit", function(event) {
+		event.preventDefault();
+		messageFrame.textContent = "";
+		if (resultField.value !== "") {
+			resultField.focus();
+			resultField.select();
+			return;
+		}
+
+		let generatePassword = function(params) {
+			let textEncoder = new TextEncoder();
+			let p = textEncoder.encode(params.passphr);
+			let s = textEncoder.encode(params.site + params.salt);
+			let n = Number(params.cost);
+			let l = Number(params.len);
+			if (!Number.isInteger(n) || n < 1 || n > 20) {
+				return "コストには1から20までの整数を設定してください";
+			}
+			if (!Number.isInteger(l) || l < 1 || l > 65535) {
+				return "長さには1から65535までの整数を設定してください";
+			}
+			scrypt(p, s, {logN: n, r: 8, p: 1, dkLen: l*4}, function(k) {
+				let c = digitClass;
+				if (params.alpha) {
+					c += alphaClass;
+				}
+				if (params.punct) {
+					c += punctClass;
+				}
+				let v = "";
+				for (let i = 0; i < l*4; i += 4) {
+					let b = k[i] | k[i+1]<<8 | k[i+2]<<16 | k[i+3]<<24;
+					v += c[(b>>>0) % c.length];
+				}
+				resultField.value = v;
+				resultField.select();
+			});
+			return null;
+		};
+
+		resultField.value = "...";
+		resultField.focus();
+		window.requestAnimationFrame(function() {
+			window.setTimeout(function() {
+				resultField.value = "";
+
+				let params = {
+					passphr: document.getElementById("passphr").value,
+					site: document.getElementById("site").value,
+					salt: document.getElementById("salt").value,
+					cost: document.getElementById("cost").value,
+					len: document.getElementById("len").value,
+					alpha: document.getElementById("alpha").checked,
+					punct: document.getElementById("punct").checked
+				};
+
+				let hash = new URLSearchParams();
+				hash.set("site", params.site);
+				hash.set("salt", params.salt);
+				hash.set("cost", params.cost);
+				hash.set("len", params.len);
+				hash.set("alpha", params.alpha.toString());
+				hash.set("punct", params.punct.toString());
+				location.hash = hash.toString();
+
+				let error = generatePassword(params);
+				if (error !== null) {
+					messageFrame.textContent = "エラー: " + error;
+				}
+				generatorForm.addEventListener("input", clearResult);
+				generatorForm.addEventListener("change", clearResult);
+			});
+		});
+	});
+
+	resultField.addEventListener("contextmenu", function(event) {
+		if (typeof navigator.clipboard === "undefined") {
+			return;
+		}
+		let s = resultField.selectionStart;
+		let e = resultField.selectionEnd;
+		if (s === e) {
+			return;
+		}
+		let r = resultField.value.slice(s, e);
+		navigator.clipboard.writeText(r).then(function() {
+			messageFrame.textContent = "コピーしました";
+		}).catch(function() {
+			messageFrame.textContent = "コピーできませんでした";
+		});
+		event.preventDefault();
+	});
+
+	resultField.addEventListener("keydown", function(event) {
+		switch (event.key) {
+		case "Backspace":
+			document.getElementById("passphr").focus();
+			event.preventDefault();
+			return;
+		case "Enter":
+			document.getElementById("generate").click();
+			event.preventDefault();
+			return;
+		}
+	});
+
+	let defaultTitle = document.title;
+	let receiveParams = function(changed) {
+		let hash = new URLSearchParams(location.hash.slice(1));
+		let site = hash.get("site");
+		if (site === null || site === "") {
+			document.title = defaultTitle;
+		} else {
+			document.title = site;
+		}
+		let names = [
+			"site",
+			"salt",
+			"cost",
+			"len",
+			"alpha",
+			"punct"
+		];
+		for (let i = 0; i < names.length; i++) {
+			let v = hash.get(names[i]);
+			let e = document.getElementById(names[i]);
+			if (e.type === "checkbox") {
+				let c;
+				if (v === null) {
+					c = e.defaultChecked;
+				} else {
+					c = v === "true";
+				}
+				changed = changed || e.checked !== c;
+				e.checked = c;
+			} else {
+				if (v === null) {
+					v = e.defaultValue;
+				}
+				changed = changed || e.value !== v;
+				e.value = v;
+			}
+		}
+		if (changed) {
+			clearResult();
+		}
+	};
+	window.addEventListener("hashchange", function(event) {
+		let l = location.hash.length;
+		if (l > 1 || event.oldURL.length - (event.newURL.length - l) > 1) {
+			receiveParams(false);
+		}
+	});
+	window.addEventListener("pageshow", function() {
+		window.setTimeout(function() {
+			document.getElementById("passphr").type = "text";
+			document.getElementById("passphr").focus();
+			receiveParams(true);
+		});
+	});
+});
+</script>
+</head>
+<body>
+
+<h1><a href="#">ScryPass</a></h1>
+
+<div class="boxes">
+	<form id="generator" autocomplete="off">
+		<div class="box">
+			<label for="passphr">パスフレーズ</label>
+			<input id="passphr" class="secret" type="password" placeholder=" " />
+		</div>
+		<div class="box">
+			<label for="site">サイト</label>
+			<input id="site" type="text" placeholder="example.com" />
+		</div>
+		<div class="box">
+			<div style="display: flex;">
+				<label style="flex: 1;" for="salt">ソルト</label>
+				<button id="gensalt" type="button">ソルトを生成</button>
+			</div>
+			<input id="salt" type="text" />
+		</div>
+		<input id="cost" style="display: none;" type="text" value="15" />
+		<div class="box line" style="display: flex;">
+			<div style="flex: 1;">
+				<label for="len">長さ</label>
+				<input id="len" type="number" value="16" />
+			</div>
+			<div style="flex: 1;">
+				<div style="display: flex;">
+					<label style="flex: 1;"><input id="alpha" type="checkbox" checked="checked" />Aa</label>
+					<label style="flex: 1;"><input id="punct" type="checkbox" />!#</label>
+				</div>
+				<input id="generate" type="submit" value="生成" />
+			</div>
+		</div>
+	</form>
+	<div class="box sep">
+		<input id="result" class="secret" type="text" placeholder="生成ボタンを押してください" autocomplete="off" readonly="readonly" />
+	</div>
+	<div style="position: relative;">
+		<div id="message" style="position: absolute;"></div>
+	</div>
+</div>
+
+<p>パラメーターからパスワードを生成します。生成後にページをブックマークすることで、パスフレーズ以外の入力を保存できます。</p>
+
+<p class="sep"><small>このプロジェクトは<a href="https://github.com/sum305/scrypass">GitHub</a>でホストされています。</small></p>
+
+</body>
+</html>
