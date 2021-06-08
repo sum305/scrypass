@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", function() {
 		let c = digitClass + alphaClass + "._";
 		let v = "";
 		for (let i = 0; i < r.length; i++) {
-			v += c[r[i] % c.length];
+			v += c[r[i] % 64];
 		}
 		document.getElementById("salt").value = v;
 		clearResult();
