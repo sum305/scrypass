@@ -152,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function() {
 			if (!Number.isInteger(l) || l < 1 || l > 65535) {
 				return "長さには1から65535までの整数を設定してください";
 			}
-			scrypt(p, s, {logN: n, r: 8, p: 1, dkLen: l*4}, function(k) {
+			scrypt(p, s, {logN: n, r: 8, p: 1, dkLen: l*8}, function(k) {
 				let c = digitClass;
 				if (params.alpha) {
 					c += alphaClass;
@@ -161,9 +161,10 @@ document.addEventListener("DOMContentLoaded", function() {
 					c += punctClass;
 				}
 				let v = "";
-				for (let i = 0; i < l*4; i += 4) {
-					let b = k[i] | k[i+1]<<8 | k[i+2]<<16 | k[i+3]<<24;
-					v += c[(b>>>0) % c.length];
+				for (let i = 0; i < l*8; i += 8) {
+					let b1 = (k[i+0] | k[i+1]<<8 | k[i+2]<<16 | k[i+3]<<24)>>>0;
+					let b2 = (k[i+4] | k[i+5]<<8 | k[i+6]<<16 | k[i+7]<<24)>>>0;
+					v += c[(b1+(b2%c.length*4294967296)) % c.length];
 				}
 				resultField.value = v;
 				resultField.select();
