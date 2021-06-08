@@ -292,6 +292,23 @@ document.addEventListener("DOMContentLoaded", function() {
 			receiveParams(true);
 		});
 	});
+
+	let clearSecretsTimer = null;
+	window.addEventListener("focus", function() {
+		window.setTimeout(function() {
+			window.clearTimeout(clearSecretsTimer);
+			clearSecretsTimer = null;
+		});
+	});
+	window.addEventListener("blur", function() {
+		window.clearTimeout(clearSecretsTimer);
+		clearSecretsTimer = window.setTimeout(function() {
+			document.getElementById("passphr").value = "";
+			document.getElementById("passphr").focus();
+			clearResult();
+			clearSecretsTimer = null;
+		}, 15 * 60 * 1000);
+	});
 });
 </script>
 </head>
