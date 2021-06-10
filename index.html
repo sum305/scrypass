@@ -115,18 +115,6 @@ document.addEventListener("DOMContentLoaded", function() {
 		generatorForm.removeEventListener("change", clearResult);
 	};
 
-	document.getElementById("gensalt").addEventListener("click", function() {
-		let r = new Uint8Array(20);
-		window.crypto.getRandomValues(r);
-		let c = digitClass + alphaClass + "._";
-		let v = "";
-		for (let i = 0; i < r.length; i++) {
-			v += c[r[i] % 64];
-		}
-		document.getElementById("salt").value = v;
-		clearResult();
-	});
-
 	generatorForm.addEventListener("submit", function(event) {
 		event.preventDefault();
 		messageFrame.textContent = "";
@@ -207,6 +195,18 @@ document.addEventListener("DOMContentLoaded", function() {
 				generatorForm.addEventListener("change", clearResult);
 			});
 		});
+	});
+
+	document.getElementById("gensalt").addEventListener("click", function() {
+		let r = new Uint8Array(20);
+		window.crypto.getRandomValues(r);
+		let c = digitClass + alphaClass + "._";
+		let v = "";
+		for (let i = 0; i < r.length; i++) {
+			v += c[r[i] % 64];
+		}
+		document.getElementById("salt").value = v;
+		clearResult();
 	});
 
 	resultField.addEventListener("contextmenu", function(event) {
