@@ -303,8 +303,11 @@ document.addEventListener("DOMContentLoaded", function() {
 	window.addEventListener("blur", function() {
 		window.clearTimeout(clearSecretsTimer);
 		clearSecretsTimer = window.setTimeout(function() {
-			document.getElementById("passphr").value = "";
-			document.getElementById("passphr").focus();
+			let e1 = document.getElementById("passphr");
+			let e2 = e1.cloneNode();
+			e1.parentNode.replaceChild(e2, e1);
+			e2.value = "";
+			e2.focus();
 			clearResult();
 			clearSecretsTimer = null;
 		}, 15 * 60 * 1000);
