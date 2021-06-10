@@ -127,10 +127,6 @@ document.addEventListener("DOMContentLoaded", function() {
 		clearResult();
 	});
 
-	generatorForm.addEventListener("change", function(event) {
-		event.target.value = event.target.value.normalize("NFKC");
-	});
-
 	generatorForm.addEventListener("submit", function(event) {
 		event.preventDefault();
 		messageFrame.textContent = "";
@@ -141,17 +137,23 @@ document.addEventListener("DOMContentLoaded", function() {
 		}
 
 		let generatePassword = function(params) {
+			let passphr = params.passphr.normalize("NFKC");
+			let site = params.site.normalize("NFKC");
+			let salt = params.salt.normalize("NFKC");
+
 			let textEncoder = new TextEncoder();
-			let p = textEncoder.encode(params.passphr);
-			let s = textEncoder.encode(params.site + params.salt);
+			let p = textEncoder.encode(passphr);
+			let s = textEncoder.encode(site + salt);
 			let n = Number(params.cost);
 			let l = Number(params.len);
+
 			if (!Number.isInteger(n) || n < 1 || n > 20) {
 				return "コストには1から20までの整数を設定してください";
 			}
 			if (!Number.isInteger(l) || l < 1 || l > 65535) {
 				return "長さには1から65535までの整数を設定してください";
 			}
+
 			scrypt(p, s, {logN: n, r: 8, p: 1, dkLen: l*8}, function(k) {
 				let c = digitClass;
 				if (params.alpha) {
