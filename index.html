@@ -209,6 +209,19 @@ document.addEventListener("DOMContentLoaded", function() {
 		clearResult();
 	});
 
+	resultField.addEventListener("keydown", function(event) {
+		switch (event.key) {
+		case "Backspace":
+			document.getElementById("passphr").focus();
+			event.preventDefault();
+			return;
+		case "Enter":
+			document.getElementById("generate").click();
+			event.preventDefault();
+			return;
+		}
+	});
+
 	resultField.addEventListener("contextmenu", function(event) {
 		if (typeof navigator.clipboard === "undefined") {
 			return;
@@ -225,19 +238,6 @@ document.addEventListener("DOMContentLoaded", function() {
 			messageFrame.textContent = "コピーできませんでした";
 		});
 		event.preventDefault();
-	});
-
-	resultField.addEventListener("keydown", function(event) {
-		switch (event.key) {
-		case "Backspace":
-			document.getElementById("passphr").focus();
-			event.preventDefault();
-			return;
-		case "Enter":
-			document.getElementById("generate").click();
-			event.preventDefault();
-			return;
-		}
 	});
 
 	let defaultTitle = document.title;
@@ -281,18 +281,18 @@ document.addEventListener("DOMContentLoaded", function() {
 			clearResult();
 		}
 	};
-	window.addEventListener("hashchange", function(event) {
-		let l = location.hash.length;
-		if (l > 1 || event.oldURL.length - (event.newURL.length - l) > 1) {
-			receiveParams(false);
-		}
-	});
 	window.addEventListener("pageshow", function() {
 		window.setTimeout(function() {
 			document.getElementById("passphr").type = "text";
 			document.getElementById("passphr").focus();
 			receiveParams(true);
 		});
+	});
+	window.addEventListener("hashchange", function(event) {
+		let l = location.hash.length;
+		if (l > 1 || event.oldURL.length - (event.newURL.length - l) > 1) {
+			receiveParams(false);
+		}
 	});
 
 	let clearSecretsTimer = null;
@@ -305,12 +305,13 @@ document.addEventListener("DOMContentLoaded", function() {
 	window.addEventListener("blur", function() {
 		window.clearTimeout(clearSecretsTimer);
 		clearSecretsTimer = window.setTimeout(function() {
-			let e = document.getElementById("passphr");
-			e.type = "password";
-			e.value = "";
-			e.parentNode.replaceChild(e.cloneNode(), e);
-			document.getElementById("passphr").type = "text";
-			document.getElementById("passphr").focus();
+			let e1 = document.getElementById("passphr");
+			e1.type = "password";
+			e1.value = "";
+			let e2 = e1.cloneNode();
+			e1.parentNode.replaceChild(e2, e1);
+			e2.type = "text";
+			e2.focus();
 			clearResult();
 			clearSecretsTimer = null;
 		}, 15 * 60 * 1000);
