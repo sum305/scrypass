@@ -309,10 +309,10 @@
 			const N = e.data.N;
 			const r = e.data.r;
 
-			const V = new Int32Array(32*N*r + 64*r);
 			const L = (2*r-1) * 16;
 			const R = 32 * r;
-			const xi = 32 * N * r;
+			const V = new Int32Array(N*R + 2*R);
+			const xi = N * R;
 			const yi = xi + R;
 
 			for (let i = 0; i < R; i++) {
