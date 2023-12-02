@@ -386,8 +386,8 @@
 				}
 			};
 
-			const b = B.subarray(i*128*r, (i+1)*128*r);
-			w[i].postMessage({B: b, N: N, r: r});
+			const b = B.slice(i*128*r, (i+1)*128*r);
+			w[i].postMessage({B: b, N: N, r: r}, [b.buffer]);
 		}
 		return terminateAll;
 	}
