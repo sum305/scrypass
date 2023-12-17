@@ -210,23 +210,23 @@ document.addEventListener("DOMContentLoaded", () => {
 			iter: document.getElementById("iter").value
 		};
 
-		const hash = new URLSearchParams();
-		hash.set("site", params.site);
-		hash.set("salt", params.salt);
-		hash.set("len", params.len);
-		hash.set("digit", params.digit.toString());
-		hash.set("upper", params.upper.toString());
-		hash.set("lower", params.lower.toString());
-		hash.set("punct", params.punct.toString());
-		hash.set("cost", params.cost);
-		hash.set("iter", params.iter);
-		location.hash = hash.toString();
-
 		const error = generatePassword(params);
 		if (error !== null) {
 			messageElem.textContent = "エラー: " + error;
 		} else {
 			resultElem.value = "...";
+
+			const hash = new URLSearchParams();
+			hash.set("site", params.site);
+			hash.set("salt", params.salt);
+			hash.set("len", params.len);
+			hash.set("digit", params.digit.toString());
+			hash.set("upper", params.upper.toString());
+			hash.set("lower", params.lower.toString());
+			hash.set("punct", params.punct.toString());
+			hash.set("cost", params.cost);
+			hash.set("iter", params.iter);
+			location.hash = hash.toString();
 		}
 		generatorElem.addEventListener("input", clearResult);
 	});
