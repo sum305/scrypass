@@ -381,8 +381,8 @@
 				B.set(e.data, i*128*r);
 				j++;
 				if (j === p) {
-					callback(pbkdf2HmacSha256Once(password, B, dkLen));
 					terminateAll();
+					callback(pbkdf2HmacSha256Once(password, B, dkLen));
 				}
 			};
 
