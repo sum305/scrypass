@@ -222,16 +222,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	document.getElementById("gensalt").addEventListener("click", () => {
 		const chars = digitChars + lowerChars;
-		const t = 256 - 256%chars.length;
-		const r = new Uint8Array(1);
+		const max = 256 - 1 - 256%chars.length;
+		const buf = new Uint8Array(1);
 		let v = "";
 		for (let i = 0; i < 25; i++) {
 			if (i > 0 && i%5 === 0) {
 				v += "-";
 			}
-			let n = window.crypto.getRandomValues(r)[0];
-			while (n >= t) {
-				n = window.crypto.getRandomValues(r)[0];
+			let n = window.crypto.getRandomValues(buf)[0];
+			while (n > max) {
+				n = window.crypto.getRandomValues(buf)[0];
 			}
 			v += chars[n % chars.length];
 		}
