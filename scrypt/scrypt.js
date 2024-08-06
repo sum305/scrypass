@@ -349,7 +349,7 @@
 	});
 
 	function scrypt(password, salt, N, r, p, dkLen, callback) {
-		const maxInt = (1<<31>>>0) - 1;
+		const maxInt = 0x7fffffff;
 
 		if (N < 2 || N > maxInt) {
 			throw new Error("scrypt: N is out of range");
