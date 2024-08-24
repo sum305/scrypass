@@ -1,4 +1,4 @@
-(function() {
+(() => {
 	"use strict";
 
 	const sha256K = [
@@ -20,7 +20,7 @@
 		0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 	];
 
-	function sha256Block(v, w, m, len) {
+	const sha256Block = (v, w, m, len) => {
 		let pos = 0;
 		while (len >= 64) {
 			for (let i = 0; i < 16; i++) {
@@ -77,9 +77,9 @@
 			pos += 64;
 			len -= 64;
 		}
-	}
+	};
 
-	function sha256(v, w, p, m, out, pos) {
+	const sha256 = (v, w, p, m, out, pos) => {
 		v[0] = 0x6a09e667;
 		v[1] = 0xbb67ae85;
 		v[2] = 0x3c6ef372;
@@ -119,9 +119,9 @@
 			out[j+2] = u >>> 8;
 			out[j+3] = u >>> 0;
 		}
-	}
+	};
 
-	function pbkdf2HmacSha256Once(password, salt, dkLen) {
+	const pbkdf2HmacSha256Once = (password, salt, dkLen) => {
 		const innerLen = 64 + salt.length + 4;
 		const inner = new Uint8Array(innerLen);
 		const outer = new Uint8Array(64 + 32);
@@ -155,16 +155,16 @@
 			sha256(v, w, p, outer, dk, i);
 		}
 		return dk.subarray(0, dkLen);
-	}
+	};
 
-	function funcToURL(fn) {
+	const funcToURL = (fn) => {
 		return URL.createObjectURL(new Blob(["(" + fn + ")();"]));
-	}
+	};
 
-	const workerURL = funcToURL(function() {
+	const workerURL = funcToURL(() => {
 		"use strict";
 
-		function blockXOR(B, dst, src, r) {
+		const blockXOR = (B, dst, src, r) => {
 			for (let i = 0; i < r; i++) {
 				B[dst+0]  ^= B[src+0];
 				B[dst+1]  ^= B[src+1];
@@ -201,9 +201,9 @@
 				dst += 32;
 				src += 32;
 			}
-		}
+		};
 
-		function blockMix(B, last, inp, out, r) {
+		const blockMix = (B, last, inp, out, r) => {
 			let w0  = B[last+0];
 			let w1  = B[last+1];
 			let w2  = B[last+2];
@@ -302,9 +302,9 @@
 				B[oi+14] = w14 = (w14 + x14) | 0;
 				B[oi+15] = w15 = (w15 + x15) | 0;
 			}
-		}
+		};
 
-		self.onmessage = function(e) {
+		self.onmessage = (e) => {
 			const B = e.data.B;
 			const N = e.data.N;
 			const r = e.data.r;
@@ -347,7 +347,7 @@
 		};
 	});
 
-	function scrypt(password, salt, N, r, p, dkLen, callback) {
+	const scrypt = (password, salt, N, r, p, dkLen, callback) => {
 		const maxInt = 0x7fffffff;
 
 		if (N < 2 || N > maxInt) {
@@ -369,15 +369,15 @@
 		const B = pbkdf2HmacSha256Once(password, salt, p*128*r);
 		const W = new Array(p);
 
-		function terminateAll() {
+		const terminateAll = () => {
 			for (let i = 0; i < p; i++) W[i].terminate();
 			p = 0;
-		}
+		};
 
 		let j = 0;
 		for (let i = 0; i < p; i++) {
 			const w = W[i] = new Worker(workerURL);
-			w.onmessage = function(e) {
+			w.onmessage = (e) => {
 				B.set(e.data, i*128*r);
 				j++;
 				if (j === p) {
@@ -390,7 +390,7 @@
 			w.postMessage({B: b, N: N, r: r}, [b.buffer]);
 		}
 		return terminateAll;
-	}
+	};
 
 	self.scrypt = scrypt;
 })();
