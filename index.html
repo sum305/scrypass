@@ -167,13 +167,13 @@ document.addEventListener("DOMContentLoaded", () => {
 		const passphr = textenc.encode(passphrStr);
 		const salt = textenc.encode(siteStr + " " + saltStr);
 
-		cancelGenerate = scrypt(passphr, salt, 1<<cost, 8, iter, 32*plen, (k) => {
+		cancelGenerate = scrypt(passphr, salt, 1<<cost, 8, iter, 32*plen, (dk) => {
 			cancelGenerate = null;
 			let v = "";
 			for (let i = 0; i < 32*plen; i += 32) {
 				let n = 0;
 				for (let j = i; j < i+32; j += 4) {
-					const w = k[j+0]<<24 | k[j+1]<<16 | k[j+2]<<8 | k[j+3];
+					const w = dk[j+0]<<24 | dk[j+1]<<16 | dk[j+2]<<8 | dk[j+3];
 					n = (n*0x100000000 + (w>>>0)) % chars.length;
 				}
 				v += chars[n];
@@ -262,9 +262,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	if (typeof navigator.clipboard !== "undefined") {
 		const copyPassword = (event) => {
-			const ss = resultElem.selectionStart;
-			const se = resultElem.selectionEnd;
-			if (ss === se) {
+			const start = resultElem.selectionStart;
+			const end = resultElem.selectionEnd;
+			if (start === end) {
 				return;
 			}
 			const v = resultElem.value;
@@ -272,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				return;
 			}
 			event.preventDefault();
-			navigator.clipboard.writeText(v.slice(ss, se)).then(() => {
+			navigator.clipboard.writeText(v.slice(start, end)).then(() => {
 				if (resultElem.value === v) {
 					messageElem.textContent = "コピーしました";
 				}
