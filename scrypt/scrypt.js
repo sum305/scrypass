@@ -369,7 +369,9 @@
 
 		let j = 0;
 		for (let i = 0; i < p; i++) {
+			const b = B.slice(i*128*r, (i+1)*128*r);
 			const w = new Worker(workerURL);
+			w.postMessage({B: b, N: N, r: r}, [b.buffer]);
 			w.onmessage = (e) => {
 				B.set(e.data, i*128*r);
 				j++;
@@ -379,9 +381,6 @@
 				}
 			};
 			workers.push(w);
-
-			const b = B.slice(i*128*r, (i+1)*128*r);
-			w.postMessage({B: b, N: N, r: r}, [b.buffer]);
 		}
 		return terminateAll;
 	};
