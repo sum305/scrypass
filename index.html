@@ -257,26 +257,39 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 
 	if (typeof navigator.clipboard !== "undefined") {
-		const copyPassword = (event) => {
-			const start = resultElem.selectionStart;
-			const end = resultElem.selectionEnd;
-			if (start === end) {
+		let timeoutId = 0;
+		const onPointerDown = () => {
+			if (resultElem.value !== "" && resultElem.value !== "...") {
+				window.clearTimeout(timeoutId);
+				timeoutId = window.setTimeout(copyPassword, 100, resultElem.value, 0);
+			}
+		};
+		const onContextMenu = (event) => {
+			if (timeoutId !== 0) {
+				timeoutId = 0;
+				event.preventDefault();
+			}
+		};
+		const copyPassword = (password, count) => {
+			if (timeoutId !== 0) {
+				if (count === 6) {
+					timeoutId = 0;
+					return;
+				}
+				timeoutId = window.setTimeout(copyPassword, 250, password, count+1);
 				return;
 			}
-			const v = resultElem.value;
-			if (v === "...") {
-				return;
-			}
-			event.preventDefault();
-			navigator.clipboard.writeText(v.slice(start, end)).then(() => {
-				if (resultElem.value === v) {
+			navigator.clipboard.writeText(password).then(() => {
+				if (resultElem.value === password) {
 					messageElem.textContent = "コピーしました";
 				}
 			}).catch(() => {
-				resultElem.removeEventListener("contextmenu", copyPassword);
+				resultElem.removeEventListener("pointerdown", onPointerDown);
+				resultElem.removeEventListener("contextmenu", onContextMenu);
 			});
 		};
-		resultElem.addEventListener("contextmenu", copyPassword);
+		resultElem.addEventListener("pointerdown", onPointerDown);
+		resultElem.addEventListener("contextmenu", onContextMenu);
 	}
 
 	const defaultTitle = document.title;
