@@ -229,15 +229,17 @@ document.addEventListener("DOMContentLoaded", () => {
 		const max = 256 - 1 - 256%chars.length;
 		const buf = new Uint8Array(1);
 		let v = "";
-		for (let i = 0; i < 25; i++) {
-			if (i > 0 && i%5 === 0) {
+		for (let i = 0; i < 25; i += 5) {
+			if (i > 0) {
 				v += "-";
 			}
-			let n = window.crypto.getRandomValues(buf)[0];
-			while (n > max) {
-				n = window.crypto.getRandomValues(buf)[0];
+			for (let j = 0; j < 5; j++) {
+				let n = window.crypto.getRandomValues(buf)[0];
+				while (n > max) {
+					n = window.crypto.getRandomValues(buf)[0];
+				}
+				v += chars[n % chars.length];
 			}
-			v += chars[n % chars.length];
 		}
 		document.getElementById("salt").value = v;
 		clearResult();
