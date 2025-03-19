@@ -263,11 +263,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		let contextMenu = false;
 		const onPointerDown = () => {
 			window.clearTimeout(timeoutId);
-			timeoutId = 0;
-			if (resultElem.value !== "" && resultElem.value !== "...") {
-				timeoutId = window.setTimeout(onTimeout, 100, resultElem.value, 0);
-				contextMenu = false;
-			}
+			timeoutId = window.setTimeout(onTimeout, 100, 0);
+			contextMenu = false;
 		};
 		const onContextMenu = (event) => {
 			if (timeoutId !== 0) {
@@ -275,20 +272,26 @@ document.addEventListener("DOMContentLoaded", () => {
 				event.preventDefault();
 			}
 		};
-		const onTimeout = (value, count) => {
+		const onTimeout = (count) => {
 			timeoutId = 0;
-			if (contextMenu) {
-				navigator.clipboard.writeText(value).then(() => {
-					if (resultElem.value === value) {
-						messageElem.textContent = "コピーしました";
-					}
-				}).catch(() => {
-					resultElem.removeEventListener("pointerdown", onPointerDown);
-					resultElem.removeEventListener("contextmenu", onContextMenu);
-				});
-			} else if (count < 6) {
-				timeoutId = window.setTimeout(onTimeout, 250, value, count+1);
+			if (!contextMenu) {
+				if (count < 6) {
+					timeoutId = window.setTimeout(onTimeout, 250, count+1);
+				}
+				return;
 			}
+			const value = resultElem.value;
+			if (value === "" || value === "...") {
+				return;
+			}
+			navigator.clipboard.writeText(value).then(() => {
+				if (resultElem.value === value) {
+					messageElem.textContent = "コピーしました";
+				}
+			}).catch(() => {
+				resultElem.removeEventListener("pointerdown", onPointerDown);
+				resultElem.removeEventListener("contextmenu", onContextMenu);
+			});
 		};
 		resultElem.addEventListener("pointerdown", onPointerDown);
 		resultElem.addEventListener("contextmenu", onContextMenu);
