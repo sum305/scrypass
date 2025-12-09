@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		generatorElem.removeEventListener("input", clearResult);
 	};
 
-	const generatePassword = (paramPassphr, params) => {
+	const generatePassword = (passphrStr, params) => {
 		const plen = Number(params.len);
 		if (!Number.isInteger(plen) || plen < 4 || plen > 255) {
 			return "長さには4から255までの整数を設定してください";
@@ -166,13 +166,10 @@ document.addEventListener("DOMContentLoaded", () => {
 			return "コスト"+cost+"の反復回数には1から"+maxIter+"までの整数を設定してください";
 		}
 
-		const passphrStr = paramPassphr.normalize("NFKC");
-		const siteStr = params.site.normalize("NFKC");
-		const saltStr = params.salt.normalize("NFKC");
-
 		const textenc = new TextEncoder();
-		const passphr = textenc.encode(passphrStr);
-		const salt = textenc.encode(siteStr + " " + saltStr);
+		const passphr = textenc.encode(passphrStr.normalize("NFKC"));
+		const saltStr = params.site + "\x20" + params.salt;
+		const salt = textenc.encode(saltStr.normalize("NFKC"));
 
 		cancelGenerate = scrypt(passphr, salt, 1<<cost, 8, iter, 32*plen, (dk) => {
 			let v = "";
@@ -280,12 +277,12 @@ document.addEventListener("DOMContentLoaded", () => {
 				}
 				return;
 			}
-			const value = resultElem.value;
-			if (value === "" || value === "...") {
+			const v = resultElem.value;
+			if (v === "" || v === "...") {
 				return;
 			}
-			navigator.clipboard.writeText(value).then(() => {
-				if (resultElem.value === value) {
+			navigator.clipboard.writeText(v).then(() => {
+				if (resultElem.value === v) {
 					messageElem.textContent = "コピーしました";
 				}
 			}).catch(() => {
