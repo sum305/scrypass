@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>ScryPass パスワードジェネレータ</title>
+<link rel="icon" href="favicon.png">
+<style>
+body {
+	background: #ddd;
+	font-family: sans-serif;
+	line-height: 1.5;
+	text-size-adjust: 100%;
+	color: #333;
+}
+body > * {
+	max-width: max-content;
+	margin-left: auto;
+	margin-right: auto;
+}
+h1 {
+	margin: 0.5em auto;
+	font-size: 1.5em;
+}
+input, button {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	font-family: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	color: inherit;
+}
+input:not([type="checkbox"]) {
+	width: 100%;
+	height: 2em;
+	padding: 0 0.75em;
+	border: 1px solid #ccc;
+	border-radius: 0.25em;
+	background: #fff;
+}
+input[type="checkbox"] {
+	appearance: none;
+	width: 1em;
+	height: 1em;
+	margin-right: 0.5em;
+	border: 1px solid #bbb;
+	border-radius: 0.25em;
+	background: #fff;
+}
+input[type="checkbox"]:checked {
+	background: #bbb;
+}
+input[type="submit"] {
+	background: #ddd;
+}
+input:focus {
+	box-shadow: 0 0 0 0.25em #ddd;
+	outline: none;
+	border-color: #bbb;
+}
+button {
+	margin: 0.25em 0;
+	border: none;
+	background: transparent;
+	text-decoration: underline;
+}
+label {
+	display: block;
+	padding: 0.25em 0;
+}
+.box {
+	max-width: 20em;
+	padding: 0.75em 1em;
+	box-shadow: 0 0 0.25em #bbb;
+	border-radius: 0.5em;
+	background: #eee;
+}
+.part {
+	margin: 0.25em 0;
+}
+.sep {
+	margin: 0.75em 0;
+}
+.line > :nth-child(n+2) {
+	margin-left: 1em;
+}
+.secret:not(:focus):not(:placeholder-shown) {
+	background: #ccc;
+	color: transparent;
+}
+.secret:not(:focus)::selection {
+	background: transparent;
+	color: transparent;
+}
+#message:not(:empty) {
+	left: 0;
+	right: 0;
+	max-width: max-content;
+	margin: 0 auto;
+	padding: 0.5em;
+	border-radius: 0.25em;
+	background: #000;
+	color: #fff;
+	opacity: 0.75;
+}
+</style>
+<script src="scrypt/scrypt.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+	"use strict";
+
+	const digitChars = "0123456789";
+	const upperChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	const lowerChars = "abcdefghijklmnopqrstuvwxyz";
+	const punctChars = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+
+	const generatorElem = document.getElementById("generator");
+	const resultElem = document.getElementById("result");
+	const messageElem = document.getElementById("message");
+
+	let cancelGenerate = () => {};
+
+	const clearResult = () => {
+		resultElem.value = "";
+		messageElem.textContent = "";
+		cancelGenerate();
+		generatorElem.removeEventListener("input", clearResult);
+	};
+
+	const generatePassword = (passphrStr, params) => {
+		const plen = Number(params.len);
+		if (!Number.isInteger(plen) || plen < 4 || plen > 255) {
+			return "長さには4から255までの整数を設定してください";
+		}
+
+		let chars = "";
+		if (params.digit) {
+			chars += digitChars;
+		}
+		if (params.upper) {
+			chars += upperChars;
+		}
+		if (params.lower) {
+			chars += lowerChars;
+		}
+		if (params.punct) {
+			chars += punctChars;
+		}
+		if (chars === "") {
+			return "文字種を1つ以上選択してください";
+		}
+
+		const maxCost = 19;
+		const cost = Number(params.cost);
+		if (!Number.isInteger(cost) || cost < 16 || cost > maxCost) {
+			return "コストには16から"+maxCost+"までの整数を設定してください";
+		}
+
+		const maxIter = 1 << (maxCost - cost);
+		const iter = Number(params.iter);
+		if (!Number.isInteger(iter) || iter < 1 || iter > maxIter) {
+			if (maxIter === 1) {
+				return "コスト"+cost+"の反復回数には1を設定してください";
+			}
+			return "コスト"+cost+"の反復回数には1から"+maxIter+"までの整数を設定してください";
+		}
+
+		const textenc = new TextEncoder();
+		const passphr = textenc.encode(passphrStr.normalize("NFKC"));
+		const saltStr = params.site + "\x20" + params.salt;
+		const salt = textenc.encode(saltStr.normalize("NFKC"));
+
+		cancelGenerate = scrypt(passphr, salt, 1<<cost, 8, iter, 32*plen, (dk) => {
+			let v = "";
+			for (let i = 0; i < 32*plen; i += 32) {
+				let n = 0;
+				for (let j = i; j < i+32; j += 4) {
+					const w = dk[j+0]<<24 | dk[j+1]<<16 | dk[j+2]<<8 | dk[j+3];
+					n = (n*0x100000000 + (w>>>0)) % chars.length;
+				}
+				v += chars[n];
+			}
+			resultElem.value = v;
+			resultElem.setSelectionRange(0, plen);
+		});
+		return null;
+	};
+
+	generatorElem.addEventListener("submit", (event) => {
+		event.preventDefault();
+		messageElem.textContent = "";
+		resultElem.focus();
+		if (resultElem.value !== "") {
+			if (resultElem.value !== "...") {
+				resultElem.select();
+			}
+			return;
+		}
+
+		const passphr = document.getElementById("passphr").value;
+		const params = {
+			site: document.getElementById("site").value,
+			salt: document.getElementById("salt").value,
+			len: document.getElementById("len").value,
+			digit: document.getElementById("digit").checked,
+			upper: document.getElementById("upper").checked,
+			lower: document.getElementById("lower").checked,
+			punct: document.getElementById("punct").checked,
+			cost: document.getElementById("cost").value,
+			iter: document.getElementById("iter").value
+		};
+
+		const error = generatePassword(passphr, params);
+		if (error !== null) {
+			messageElem.textContent = "エラー: " + error;
+		} else {
+			location.hash = new URLSearchParams(params);
+			resultElem.value = "...";
+		}
+		generatorElem.addEventListener("input", clearResult);
+	});
+
+	document.getElementById("gensalt").addEventListener("click", () => {
+		const chars = digitChars + lowerChars;
+		const max = 256 - 1 - 256%chars.length;
+		const buf = new Uint8Array(1);
+		let v = "";
+		for (let i = 0; i < 25; i += 5) {
+			if (i > 0) {
+				v += "-";
+			}
+			for (let j = 0; j < 5; j++) {
+				let n = window.crypto.getRandomValues(buf)[0];
+				while (n > max) {
+					n = window.crypto.getRandomValues(buf)[0];
+				}
+				v += chars[n % chars.length];
+			}
+		}
+		document.getElementById("salt").value = v;
+		clearResult();
+	});
+
+	resultElem.addEventListener("keydown", (event) => {
+		switch (event.key) {
+		case "Backspace":
+			event.preventDefault();
+			document.getElementById("passphr").focus();
+			return;
+		case "Enter":
+			event.preventDefault();
+			document.getElementById("generate").click();
+			return;
+		}
+	});
+
+	if (typeof navigator.clipboard !== "undefined") {
+		let timer = 0;
+		let contextMenu = false;
+		const tick = (count) => {
+			timer = 0;
+			if (!contextMenu) {
+				if (count < 10) {
+					timer = window.setTimeout(tick, 200, count+1);
+				}
+				return;
+			}
+			const v = resultElem.value;
+			if (v === "" || v === "...") {
+				return;
+			}
+			navigator.clipboard.writeText(v).then(() => {
+				if (resultElem.value === v) {
+					messageElem.textContent = "コピーしました";
+				}
+			});
+		};
+		resultElem.addEventListener("contextmenu", (event) => {
+			if (timer !== 0) {
+				contextMenu = true;
+				event.preventDefault();
+			}
+		});
+		resultElem.addEventListener("pointerdown", () => {
+			window.clearTimeout(timer);
+			timer = window.setTimeout(tick, 100, 0);
+			contextMenu = false;
+		});
+	}
+
+	const defaultTitle = document.title;
+	const evaluateHash = (changed) => {
+		const hash = new URLSearchParams(location.hash.slice(1));
+		const site = hash.get("site");
+		if (site !== null && site !== "") {
+			document.title = site;
+		} else {
+			document.title = defaultTitle;
+		}
+		const names = [
+			"site",
+			"salt",
+			"len",
+			"digit",
+			"upper",
+			"lower",
+			"punct",
+			"cost",
+			"iter"
+		];
+		for (const name of names) {
+			const v = hash.get(name);
+			const e = document.getElementById(name);
+			if (e.type === "checkbox") {
+				if (v !== null) {
+					const c = v === "true";
+					changed = changed || e.checked !== c;
+					e.checked = c;
+				} else {
+					changed = true;
+					e.checked = e.defaultChecked;
+				}
+			} else if (v !== null) {
+				changed = changed || e.value !== v;
+				e.value = v;
+			} else {
+				changed = true;
+				e.value = e.defaultValue;
+			}
+		}
+		return changed;
+	};
+
+	window.addEventListener("hashchange", () => {
+		if (evaluateHash(false)) {
+			clearResult();
+		}
+	});
+
+	window.addEventListener("pagehide", (event) => {
+		if (event.persisted) {
+			clearResult();
+		}
+	});
+
+	window.addEventListener("pageshow", (event) => {
+		if (event.persisted) {
+			return;
+		}
+		if (location.hash !== "") {
+			evaluateHash(true);
+		}
+		document.getElementById("passphr").type = "text";
+		document.getElementById("passphr").focus();
+	});
+});
+</script>
+</head>
+<body>
+
+<h1>ScryPass</h1>
+
+<div class="box">
+	<form id="generator" novalidate>
+		<div class="part">
+			<label for="passphr">パスフレーズ</label>
+			<input id="passphr" class="secret" type="password" placeholder=" " autocomplete="off">
+		</div>
+		<div class="part">
+			<label for="site">サイト</label>
+			<input id="site" type="text" placeholder="example.com">
+		</div>
+		<div class="part">
+			<div style="display: flex;">
+				<label style="flex: 1;" for="salt">ソルト</label>
+				<button id="gensalt" type="button">ソルトを生成</button>
+			</div>
+			<input id="salt" type="text">
+		</div>
+		<div class="part line" style="display: flex;">
+			<div style="flex: 2;">
+				<label for="len">長さ</label>
+				<input id="len" type="number" value="16">
+			</div>
+			<div style="flex: 3;">
+				<div class="line" style="display: flex;">
+					<label style="flex: 1;"><input id="digit" type="checkbox" checked>01</label>
+					<label style="flex: 1;"><input id="upper" type="checkbox" checked>AB</label>
+				</div>
+				<div class="line" style="display: flex;">
+					<label style="flex: 1;"><input id="lower" type="checkbox" checked>ab</label>
+					<label style="flex: 1;"><input id="punct" type="checkbox">!?</label>
+				</div>
+			</div>
+		</div>
+		<input id="cost" style="display: none;" type="text" value="16">
+		<input id="iter" style="display: none;" type="text" value="2">
+		<div class="sep">
+			<input id="generate" type="submit" value="生成">
+		</div>
+	</form>
+	<div class="part">
+		<input id="result" class="secret" type="text" placeholder="生成ボタンを押してください" autocomplete="off" readonly>
+	</div>
+	<div style="position: relative;">
+		<div id="message" style="position: absolute;"></div>
+	</div>
+</div>
+
+<p>パラメータからパスワードをローカルで生成します。生成後、ページをブックマークすることでパスフレーズ以外の入力を保存できます。</p>
+
+<p><a href="https://github.com/sum305/scrypass">GitHubリポジトリ</a></p>
+
+</body>
+</html>
