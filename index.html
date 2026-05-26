@@ -128,25 +128,17 @@ document.addEventListener("DOMContentLoaded", () => {
 		generatorElem.removeEventListener("input", clearResult);
 	};
 
-	const generatePassword = (passphrStr, params) => {
+	const generatePassword = (passphr, params) => {
 		const plen = Number(params.len);
 		if (!Number.isInteger(plen) || plen < 4 || plen > 255) {
 			return "長さには4から255までの整数を設定してください";
 		}
 
 		let chars = "";
-		if (params.digit) {
-			chars += digitChars;
-		}
-		if (params.upper) {
-			chars += upperChars;
-		}
-		if (params.lower) {
-			chars += lowerChars;
-		}
-		if (params.punct) {
-			chars += punctChars;
-		}
+		if (params.digit) chars += digitChars;
+		if (params.upper) chars += upperChars;
+		if (params.lower) chars += lowerChars;
+		if (params.punct) chars += punctChars;
 		if (chars === "") {
 			return "文字種を1つ以上選択してください";
 		}
@@ -167,11 +159,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 
 		const textenc = new TextEncoder();
-		const passphr = textenc.encode(passphrStr.normalize("NFKC"));
-		const saltStr = params.site + "\x20" + params.salt;
-		const salt = textenc.encode(saltStr.normalize("NFKC"));
+		const passphr2 = textenc.encode(passphr.normalize("NFKC"));
+		const salt = params.site + "\x20" + params.salt;
+		const salt2 = textenc.encode(salt.normalize("NFKC"));
 
-		cancelGenerate = scrypt(passphr, salt, 1<<cost, 8, iter, 32*plen, (dk) => {
+		cancelGenerate = scrypt(passphr2, salt2, 1<<cost, 8, iter, 32*plen, (dk) => {
 			let v = "";
 			for (let i = 0; i < 32*plen; i += 32) {
 				let n = 0;
@@ -224,18 +216,18 @@ document.addEventListener("DOMContentLoaded", () => {
 	document.getElementById("gensalt").addEventListener("click", () => {
 		const chars = digitChars + lowerChars;
 		const max = 256 - 1 - 256%chars.length;
-		const buf = new Uint8Array(1);
+		const rnd = new Uint8Array(1);
 		let v = "";
 		for (let i = 0; i < 25; i += 5) {
 			if (i > 0) {
 				v += "-";
 			}
 			for (let j = 0; j < 5; j++) {
-				let n = window.crypto.getRandomValues(buf)[0];
-				while (n > max) {
-					n = window.crypto.getRandomValues(buf)[0];
+				window.crypto.getRandomValues(rnd);
+				while (rnd[0] > max) {
+					window.crypto.getRandomValues(rnd);
 				}
-				v += chars[n % chars.length];
+				v += chars[rnd[0] % chars.length];
 			}
 		}
 		document.getElementById("salt").value = v;
