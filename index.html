@@ -263,8 +263,12 @@ document.addEventListener("DOMContentLoaded", () => {
 				return;
 			}
 			navigator.clipboard.writeText(v).then(() => {
-				if (resultElem.value === v) {
+				if (v === resultElem.value) {
 					messageElem.textContent = "コピーしました";
+				}
+			}).catch(() => {
+				if (v === resultElem.value) {
+					messageElem.textContent = "クリップボードへの書き込みが許可されていません";
 				}
 			});
 		};
