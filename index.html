@@ -115,17 +115,15 @@ document.addEventListener("DOMContentLoaded", () => {
 	const lowerChars = "abcdefghijklmnopqrstuvwxyz";
 	const punctChars = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
-	const generatorElem = document.getElementById("generator");
-	const resultElem = document.getElementById("result");
-	const messageElem = document.getElementById("message");
+	const E = document.getElementById.bind(document);
 
 	let cancelGenerate = () => {};
 
 	const clearResult = () => {
-		resultElem.value = "";
-		messageElem.textContent = "";
 		cancelGenerate();
-		generatorElem.removeEventListener("input", clearResult);
+		E("result").value = "";
+		E("message").textContent = "";
+		E("generator").removeEventListener("input", clearResult);
 	};
 
 	const generatePassword = (passphr, params) => {
@@ -173,47 +171,47 @@ document.addEventListener("DOMContentLoaded", () => {
 				}
 				v += chars[n];
 			}
-			resultElem.value = v;
-			resultElem.setSelectionRange(0, plen);
+			E("result").value = v;
+			E("result").setSelectionRange(0, plen);
 		});
 		return null;
 	};
 
-	generatorElem.addEventListener("submit", (event) => {
+	E("generator").addEventListener("submit", (event) => {
 		event.preventDefault();
-		messageElem.textContent = "";
-		resultElem.focus();
-		if (resultElem.value !== "") {
-			if (resultElem.value !== "...") {
-				resultElem.select();
+		E("message").textContent = "";
+		E("result").focus();
+		if (E("result").value !== "") {
+			if (E("result").value !== "...") {
+				E("result").select();
 			}
 			return;
 		}
 
-		const passphr = document.getElementById("passphr").value;
+		const passphr = E("passphr").value;
 		const params = {
-			site: document.getElementById("site").value,
-			salt: document.getElementById("salt").value,
-			len: document.getElementById("len").value,
-			digit: document.getElementById("digit").checked,
-			upper: document.getElementById("upper").checked,
-			lower: document.getElementById("lower").checked,
-			punct: document.getElementById("punct").checked,
-			cost: document.getElementById("cost").value,
-			iter: document.getElementById("iter").value
+			site: E("site").value,
+			salt: E("salt").value,
+			len: E("len").value,
+			digit: E("digit").checked,
+			upper: E("upper").checked,
+			lower: E("lower").checked,
+			punct: E("punct").checked,
+			cost: E("cost").value,
+			iter: E("iter").value
 		};
 
 		const error = generatePassword(passphr, params);
 		if (error !== null) {
-			messageElem.textContent = "エラー: " + error;
+			E("message").textContent = "エラー: " + error;
 		} else {
 			location.hash = new URLSearchParams(params);
-			resultElem.value = "...";
+			E("result").value = "...";
 		}
-		generatorElem.addEventListener("input", clearResult);
+		E("generator").addEventListener("input", clearResult);
 	});
 
-	document.getElementById("gensalt").addEventListener("click", () => {
+	E("gensalt").addEventListener("click", () => {
 		const chars = digitChars + lowerChars;
 		const max = 256 - 1 - 256%chars.length;
 		const rnd = new Uint8Array(1);
@@ -230,19 +228,19 @@ document.addEventListener("DOMContentLoaded", () => {
 				v += chars[rnd[0] % chars.length];
 			}
 		}
-		document.getElementById("salt").value = v;
+		E("salt").value = v;
 		clearResult();
 	});
 
-	resultElem.addEventListener("keydown", (event) => {
+	E("result").addEventListener("keydown", (event) => {
 		switch (event.key) {
 		case "Backspace":
 			event.preventDefault();
-			document.getElementById("passphr").focus();
+			E("passphr").focus();
 			return;
 		case "Enter":
 			event.preventDefault();
-			document.getElementById("generate").click();
+			E("generate").click();
 			return;
 		}
 	});
@@ -258,27 +256,27 @@ document.addEventListener("DOMContentLoaded", () => {
 				}
 				return;
 			}
-			const v = resultElem.value;
+			const v = E("result").value;
 			if (v === "" || v === "...") {
 				return;
 			}
 			navigator.clipboard.writeText(v).then(() => {
-				if (v === resultElem.value) {
-					messageElem.textContent = "コピーしました";
+				if (v === E("result").value) {
+					E("message").textContent = "コピーしました";
 				}
 			}).catch(() => {
-				if (v === resultElem.value) {
-					messageElem.textContent = "クリップボードへの書き込みが許可されていません";
+				if (v === E("result").value) {
+					E("message").textContent = "クリップボードへの書き込みが許可されていません";
 				}
 			});
 		};
-		resultElem.addEventListener("contextmenu", (event) => {
+		E("result").addEventListener("contextmenu", (event) => {
 			if (timer !== 0) {
 				contextMenu = true;
 				event.preventDefault();
 			}
 		});
-		resultElem.addEventListener("pointerdown", () => {
+		E("result").addEventListener("pointerdown", () => {
 			window.clearTimeout(timer);
 			timer = window.setTimeout(tick, 100, 0);
 			contextMenu = false;
@@ -307,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		];
 		for (const name of names) {
 			const v = hash.get(name);
-			const e = document.getElementById(name);
+			const e = E(name);
 			if (e.type === "checkbox") {
 				if (v !== null) {
 					const c = v === "true";
@@ -347,8 +345,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (location.hash !== "") {
 			evaluateHash(true);
 		}
-		document.getElementById("passphr").type = "text";
-		document.getElementById("passphr").focus();
+		E("passphr").type = "text";
+		E("passphr").focus();
 	});
 });
 </script>
