@@ -348,6 +348,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		E("passphr").type = "text";
 		E("passphr").focus();
 	});
+
+	window.addEventListener("error", (event) => {
+		window.alert(event.message);
+	});
 });
 </script>
 </head>
