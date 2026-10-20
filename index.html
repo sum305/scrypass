@@ -212,7 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 
 	E("gensalt").addEventListener("click", () => {
-		const chars = digitChars + lowerChars;
+		const chars = digitChars + upperChars;
 		const max = 256 - 1 - 256%chars.length;
 		const rnd = new Uint8Array(1);
 		let v = "";
