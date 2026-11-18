@@ -126,34 +126,34 @@ document.addEventListener("DOMContentLoaded", () => {
 		E("generator").removeEventListener("input", clearResult);
 	};
 
-	const generatePassword = (passphr, params) => {
-		const count = Number(params.count);
+	const generatePassword = () => {
+		const count = Number(E("count").value);
 		if (!Number.isInteger(count) || count < 0 || count > 65535) {
 			return "更新回数には0から65535までの整数を設定してください";
 		}
 
-		const plen = Number(params.len);
+		const plen = Number(E("len").value);
 		if (!Number.isInteger(plen) || plen < 4 || plen > 255) {
 			return "長さには4から255までの整数を設定してください";
 		}
 
 		let chars = "";
-		if (params.digit) chars += digitChars;
-		if (params.upper) chars += upperChars;
-		if (params.lower) chars += lowerChars;
-		if (params.punct) chars += punctChars;
+		if (E("digit").checked) chars += digitChars;
+		if (E("upper").checked) chars += upperChars;
+		if (E("lower").checked) chars += lowerChars;
+		if (E("punct").checked) chars += punctChars;
 		if (chars === "") {
 			return "文字種を1つ以上選択してください";
 		}
 
 		const maxCost = 19;
-		const cost = Number(params.cost);
+		const cost = Number(E("cost").value);
 		if (!Number.isInteger(cost) || cost < 16 || cost > maxCost) {
 			return "コストには16から"+maxCost+"までの整数を設定してください";
 		}
 
 		const maxIter = 1 << (maxCost - cost);
-		const iter = Number(params.iter);
+		const iter = Number(E("iter").value);
 		if (!Number.isInteger(iter) || iter < 1 || iter > maxIter) {
 			if (maxIter === 1) {
 				return "コスト"+cost+"の反復回数には1を設定してください";
@@ -162,9 +162,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 
 		const textenc = new TextEncoder();
-		const passphr2 = textenc.encode(passphr.normalize("NFKC"));
-		const salt = params.site + "\x20" + params.salt + "\x20" + count;
-		const salt2 = textenc.encode(salt.normalize("NFKC"));
+		const passphr = E("passphr").value.normalize("NFKC");
+		const passphr2 = textenc.encode(passphr);
+		const site = E("site").value.normalize("NFKC");
+		const salt = E("salt").value.normalize("NFKC");
+		const salt2 = textenc.encode(site + "\x20" + salt + "\x20" + count);
 
 		cancelGenerate = scrypt(passphr2, salt2, 1<<cost, 8, iter, 32*plen, (dk) => {
 			let v = "";
@@ -179,6 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			E("result").value = v;
 			E("result").setSelectionRange(0, plen);
 		});
+		E("result").value = "...";
 		return null;
 	};
 
@@ -192,27 +195,22 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 			return;
 		}
-
-		const passphr = E("passphr").value;
-		const params = {
-			site: E("site").value,
-			salt: E("salt").value,
-			count: E("count").value,
-			len: E("len").value,
-			digit: E("digit").checked,
-			upper: E("upper").checked,
-			lower: E("lower").checked,
-			punct: E("punct").checked,
-			cost: E("cost").value,
-			iter: E("iter").value
-		};
-
-		const error = generatePassword(passphr, params);
+		const error = generatePassword();
 		if (error !== null) {
 			E("message").textContent = "エラー: " + error;
 		} else {
-			location.hash = new URLSearchParams(params);
-			E("result").value = "...";
+			location.hash = new URLSearchParams({
+				site: E("site").value,
+				salt: E("salt").value,
+				count: E("count").value,
+				len: E("len").value,
+				digit: E("digit").checked,
+				upper: E("upper").checked,
+				lower: E("lower").checked,
+				punct: E("punct").checked,
+				cost: E("cost").value,
+				iter: E("iter").value
+			});
 		}
 		E("generator").addEventListener("input", clearResult);
 	});
