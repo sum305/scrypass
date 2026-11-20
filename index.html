@@ -181,6 +181,14 @@ document.addEventListener("DOMContentLoaded", () => {
 			E("result").value = v;
 			E("result").setSelectionRange(0, plen);
 		});
+
+		E("passphr").value = passphr;
+		E("site").value = site;
+		E("salt").value = salt;
+		E("count").value = count;
+		E("len").value = plen;
+		E("cost").value = cost;
+		E("iter").value = iter;
 		E("result").value = "...";
 		return null;
 	};
