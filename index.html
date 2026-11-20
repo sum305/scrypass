@@ -162,10 +162,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 
 		const textenc = new TextEncoder();
-		const passphr = E("passphr").value.normalize("NFC");
+		const passphr = E("passphr").value.trim().normalize("NFC");
 		const passphr2 = textenc.encode(passphr);
-		const site = E("site").value.normalize("NFC");
-		const salt = E("salt").value.normalize("NFC");
+		const site = E("site").value.trim().normalize("NFC");
+		const salt = E("salt").value.trim().normalize("NFC");
 		const salt2 = textenc.encode(site + "\x20" + salt + "\x20" + count);
 
 		cancelGenerate = scrypt(passphr2, salt2, 1<<cost, 8, iter, 32*plen, (dk) => {
