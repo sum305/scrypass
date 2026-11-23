@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			for (let i = 0; i < 32*plen; i += 32) {
 				let n = 0;
 				for (let j = i; j < i+32; j += 4) {
-					const w = dk[j+0]<<24 | dk[j+1]<<16 | dk[j+2]<<8 | dk[j+3];
+					const w = dk[j+0]<<24 | dk[j+1]<<16 | dk[j+2]<<8 | dk[j+3]<<0;
 					n = (n*0x100000000 + (w>>>0)) % chars.length;
 				}
 				v += chars[n];
